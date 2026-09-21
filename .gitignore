@@ -5,3 +5,11 @@ node_modules/
 Thumbs.db
 tools/__pycache__/
 STATUS.md
+
+# development-only: real-browser test harness and local notes
+tests/
+tools/cdp.py
+tools/e2e.py
+tools/e2e_tabs.py
+tools/restart-chrome.sh
+tools/screenshot.py

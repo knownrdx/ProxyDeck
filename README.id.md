@@ -8,8 +8,11 @@
 
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4f8cff?style=flat-square)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16c47f?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tes-175%20unit%20%2B%2085%20e2e-7b5cff?style=flat-square)](#-pengujian)
+[![Zero build step](https://img.shields.io/badge/build-tanpa%20build-7b5cff?style=flat-square)](#-build-dari-sumber)
 [![No dependencies](https://img.shields.io/badge/dependensi-nol-ffb020?style=flat-square)](#-struktur-proyek)
+
+<img src="screenshots/connected.png" alt="ProxyDeck" width="340">
+<img src="screenshots/settings.png" alt="ProxyDeck" width="340">
 
 </div>
 
@@ -73,20 +76,20 @@ Gateway residensial rotasi menyisipkan id sesi di dalam username. ProxyDeck suda
 
 ## 📦 Pemasangan
 
-**Dari sumber** (disarankan selama masih berupa unpacked):
+Ambil `proxydeck.zip` dari [rilis terbaru](https://github.com/knownrdx/ProxyDeck/releases/latest), atau klon repositori ini.
 
-1. Unduh atau klon repositori ini
-2. Buka `chrome://extensions`
-3. Aktifkan **Developer mode** (kanan atas)
-4. Klik **Load unpacked** lalu pilih folder proyek
+**Chrome, Edge, Brave, Opera, Vivaldi**
 
-**Dari ZIP:**
+1. Ekstrak ke folder permanen (browser memuatnya dari folder itu terus)
+2. Buka `chrome://extensions` — di Edge alamatnya `edge://extensions`
+3. Nyalakan **Developer mode**
+4. Klik **Load unpacked** lalu pilih folder hasil ekstrak
 
-```bash
-node tools/build-zip.js        # membuat dist/proxydeck-<version>.zip
-```
+**Firefox — belum didukung**
 
-Lalu seret ZIP itu ke `chrome://extensions`.
+Firefox memakai `browser.proxy` dengan model `proxy.onRequest` miliknya
+sendiri, bukan `chrome.proxy` + PAC seperti Chromium, jadi build ini tidak
+akan berjalan di sana. Port untuk Firefox sangat diterima sebagai pull request.
 
 ---
 
@@ -102,34 +105,19 @@ Tab Connect langsung menampilkan IP keluar barumu beserta lokasinya. Tekan tombo
 
 ---
 
-## 🧪 Pengujian
+## 🔨 Build dari sumber
 
-Semua di sini diverifikasi dengan browser asli dan proxy asli — tanpa mock.
-
-```bash
-# 175 asersi engine, Node biasa, tanpa browser
-node tests/run-tests.mjs
-
-# jalankan Chrome for Testing dengan ekstensi termuat
-bash tools/restart-chrome.sh
-
-# 52 pemeriksaan: koneksi, auth, geo, penghitung, diskoneksi
-CDP_PORT=9335 python tools/e2e.py
-
-# 33 pemeriksaan: sesi lengket menahan satu IP, rotasi, isolasi tab
-CDP_PORT=9335 python tools/e2e_tabs.py
-```
-
-Rangkaian uji end-to-end mencatat IP aslimu, terhubung lewat proxy hulu sungguhan, lalu memastikan halaman keluar dari tempat lain — kemudian memutus koneksi dan memastikan IP-nya kembali. Isolasi tab dibuktikan dengan memuat dua tab pada saat bersamaan dan memeriksa bahwa keduanya melaporkan IP yang **berbeda**.
-
-Uji juga artefak yang dikirim, bukan hanya direktori kerja:
+Tidak ada langkah build — repositori bisa langsung dimuat. Untuk membuat ZIP
+yang siap dibagikan:
 
 ```bash
-node tools/build-zip.js
-unzip -o dist/proxydeck-*.zip -d /tmp/proxydeck-ship
-EXT_DIR=/tmp/proxydeck-ship bash tools/restart-chrome.sh
-CDP_PORT=9335 python tools/e2e.py
+node tools/build-zip.js        # -> dist/proxydeck-<version>.zip
+node tools/make-icons.mjs      # bangkitkan ulang set ikon (opsional)
 ```
+
+Semuanya ES module murni, tanpa bundler dan tanpa `node_modules`. Lapisan
+`src/engine/` berisi fungsi murni tanpa panggilan `chrome.*`, sehingga logika
+perutean, sesi, dan parsing bisa diuji di luar browser.
 
 ---
 
@@ -141,16 +129,11 @@ src/engine/proxy.js                logika murni — parsing, PAC, sesi, hitungan
 src/background/service-worker.js   chrome.proxy, auth, geo, penghitung byte, cakupan tab
 src/popup/                         popup.html · popup.css · popup.js
 icons/                             set ikon PNG yang dibangkitkan
-tests/run-tests.mjs                175 asersi, nol dependensi
 tools/build-zip.js                 pembuat ZIP
 tools/make-icons.mjs               pembangkit ikon PNG
-tools/restart-chrome.sh            peluncur Chrome for Testing
-tools/e2e.py                       rangkaian koneksi / geo / penggunaan data
-tools/e2e_tabs.py                  rangkaian cakupan tab / sesi lengket
-tools/cdp.py                       klien DevTools Protocol minimal
 ```
 
-Tanpa langkah build, tanpa bundler, tanpa `node_modules`. Lapisan `engine/` adalah fungsi murni tanpa panggilan `chrome.*`, itulah sebabnya seluruh rangkaian uji selesai dalam milidetik di Node biasa.
+Tanpa langkah build, tanpa bundler, tanpa `node_modules`.
 
 ---
 
@@ -179,17 +162,21 @@ Tanpa langkah build, tanpa bundler, tanpa `node_modules`. Lapisan `engine/` adal
 
 ---
 
+## ⚖️ Penafian
+
+ProxyDeck adalah **alat jaringan**. Ia meneruskan lalu lintas browsermu melalui server proxy yang **kamu** sediakan sendiri — ia tidak menyediakan proxy, akun, maupun jaminan anonimitas apa pun.
+
+**Kamu sepenuhnya bertanggung jawab atas cara penggunaannya.** Termasuk mematuhi hukum di negaramu, ketentuan layanan situs yang kamu kunjungi, dan ketentuan penyedia proxy-mu. Jangan gunakan perangkat lunak ini untuk penipuan, akses tanpa izin, mengelabui pemblokiran atau kontrol keamanan, scraping yang melanggar ketentuan situs, atau tujuan melanggar hukum lainnya.
+
+Penulis menyediakan perangkat lunak ini "sebagaimana adanya", tanpa jaminan dalam bentuk apa pun, dan **tidak menanggung tanggung jawab apa pun** atas kerusakan, kerugian, tindakan terhadap akun, atau konsekuensi hukum yang timbul dari penggunaan maupun penyalahgunaannya. Jika kamu ragu apakah penggunaanmu sah, jangan gunakan.
+
+---
+
 ## 🤝 Kontribusi
 
 Proyek ini open source di bawah MIT — silakan fork, modifikasi, rilis, bahkan jual. Pull request sangat diterima.
 
-Sebelum membuka PR:
-
-```bash
-node tests/run-tests.mjs     # harus tetap hijau
-```
-
-Jika kamu menyentuh perutean, penanganan sesi, atau penghitung, tolong tambahkan asersi di `tests/run-tests.mjs`, dan bila butuh browser sungguhan, di `tools/e2e_tabs.py`.
+Sebelum membuka PR, muat ekstensi secara unpacked dan verifikasi perubahanmu dengan proxy sungguhan — hubungkan, pastikan IP keluar benar-benar berubah, dan pastikan tab lain tidak terpengaruh saat memakai cakupan tab.
 
 ---
 

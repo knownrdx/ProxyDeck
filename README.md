@@ -8,8 +8,11 @@
 
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4f8cff?style=flat-square)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16c47f?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-175%20unit%20%2B%2085%20e2e-7b5cff?style=flat-square)](#-testing)
+[![Zero build step](https://img.shields.io/badge/build-none%20required-7b5cff?style=flat-square)](#-build-from-source)
 [![No dependencies](https://img.shields.io/badge/dependencies-zero-ffb020?style=flat-square)](#-project-layout)
+
+<img src="screenshots/connected.png" alt="ProxyDeck connected view" width="340">
+<img src="screenshots/settings.png" alt="ProxyDeck settings" width="340">
 
 </div>
 
@@ -73,20 +76,20 @@ Rotating residential gateways encode a session id in the username. ProxyDeck kno
 
 ## 📦 Install
 
-**From source** (recommended while this is unpacked):
+Grab `proxydeck.zip` from the [latest release](https://github.com/knownrdx/ProxyDeck/releases/latest), or clone this repository.
 
-1. Download or clone this repository
-2. Open `chrome://extensions`
-3. Enable **Developer mode** (top right)
-4. Click **Load unpacked** and select the project folder
+**Chrome, Edge, Brave, Opera, Vivaldi**
 
-**From a ZIP:**
+1. Unzip it somewhere permanent (the browser loads it from that folder)
+2. Open `chrome://extensions` — on Edge it is `edge://extensions`
+3. Turn on **Developer mode**
+4. Click **Load unpacked** and pick the unzipped folder
 
-```bash
-node tools/build-zip.js        # creates dist/proxydeck-<version>.zip
-```
+**Firefox — not supported yet**
 
-Then drag the ZIP onto `chrome://extensions`.
+Firefox implements proxying through `browser.proxy` and its own
+`proxy.onRequest` model rather than Chromium's `chrome.proxy` + PAC, so this
+build will not work there. A Firefox port is welcome as a pull request.
 
 ---
 
@@ -102,34 +105,19 @@ The Connect tab now shows your new exit IP and its location. Tap the power butto
 
 ---
 
-## 🧪 Testing
+## 🔨 Build from source
 
-Everything here is verified against a real browser and a real proxy — no mocks.
-
-```bash
-# 175 engine assertions, plain Node, no browser needed
-node tests/run-tests.mjs
-
-# launch Chrome for Testing with the extension loaded
-bash tools/restart-chrome.sh
-
-# 52 checks: connect, auth, geo, counters, disconnect
-CDP_PORT=9335 python tools/e2e.py
-
-# 33 checks: sticky session holds one IP, rotation, tab isolation
-CDP_PORT=9335 python tools/e2e_tabs.py
-```
-
-The end-to-end suites record your real IP, connect through an actual upstream proxy, and assert that page loads come out somewhere else — then disconnect and assert the IP comes back. Tab isolation is proven by loading two tabs at the same moment and checking they report **different** IPs.
-
-Test the shipped artifact too, not just the working tree:
+No build step is required — the repository loads as-is. To produce a
+distributable ZIP:
 
 ```bash
-node tools/build-zip.js
-unzip -o dist/proxydeck-*.zip -d /tmp/proxydeck-ship
-EXT_DIR=/tmp/proxydeck-ship bash tools/restart-chrome.sh
-CDP_PORT=9335 python tools/e2e.py
+node tools/build-zip.js        # -> dist/proxydeck-<version>.zip
+node tools/make-icons.mjs      # regenerate the icon set (optional)
 ```
+
+Everything is plain ES modules with no bundler and no `node_modules`. The
+`src/engine/` layer is pure functions with no `chrome.*` calls, so routing,
+session and parsing logic can be exercised outside a browser.
 
 ---
 
@@ -141,16 +129,11 @@ src/engine/proxy.js                pure logic — parsing, PAC, sessions, usage 
 src/background/service-worker.js   chrome.proxy, auth, geo, byte counters, tab scope
 src/popup/                         popup.html · popup.css · popup.js
 icons/                             generated PNG icon set
-tests/run-tests.mjs                175 assertions, zero dependencies
 tools/build-zip.js                 ZIP builder
 tools/make-icons.mjs               PNG icon generator
-tools/restart-chrome.sh            Chrome for Testing launcher
-tools/e2e.py                       connection / geo / usage suite
-tools/e2e_tabs.py                  tab scope / sticky session suite
-tools/cdp.py                       minimal DevTools Protocol client
 ```
 
-No build step, no bundler, no `node_modules`. The `engine/` layer is pure functions with no `chrome.*` calls, which is why the whole test suite runs in milliseconds under plain Node.
+No build step, no bundler, no `node_modules`.
 
 ---
 
@@ -179,17 +162,21 @@ No build step, no bundler, no `node_modules`. The `engine/` layer is pure functi
 
 ---
 
+## ⚖️ Disclaimer
+
+ProxyDeck is a **network tool**. It routes your browser traffic through a proxy server that **you** supply — it provides no proxies, no accounts, and no anonymity guarantees of its own.
+
+**You are solely responsible for how you use it.** That includes obeying the laws of your country, the terms of service of the sites you visit, and the terms of your proxy provider. Do not use this software for fraud, unauthorised access, evading bans or security controls, scraping in violation of a site's terms, or any other unlawful purpose.
+
+The author provides this software "as is", without warranty of any kind, and **accepts no liability whatsoever** for any damage, loss, account action, or legal consequence arising from its use or misuse. If you are unsure whether your intended use is lawful, do not use it.
+
+---
+
 ## 🤝 Contributing
 
 This is open source under MIT — fork it, modify it, ship it, sell it. Pull requests are welcome.
 
-Before you open one:
-
-```bash
-node tests/run-tests.mjs     # must stay green
-```
-
-If you touch routing, session handling or the counters, please add assertions in `tests/run-tests.mjs` and, where it needs a real browser, in `tools/e2e_tabs.py`.
+Please load the extension unpacked and verify your change against a real proxy before opening a PR — connect, check the exit IP actually moves, and confirm other tabs are unaffected when using tab scope.
 
 ---
 

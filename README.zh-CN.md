@@ -8,8 +8,11 @@
 
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4f8cff?style=flat-square)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16c47f?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-175%20单元%20%2B%2085%20端到端-7b5cff?style=flat-square)](#-测试)
+[![Zero build step](https://img.shields.io/badge/构建-无需构建-7b5cff?style=flat-square)](#-从源码构建)
 [![No dependencies](https://img.shields.io/badge/依赖-零-ffb020?style=flat-square)](#-项目结构)
+
+<img src="screenshots/connected.png" alt="ProxyDeck" width="340">
+<img src="screenshots/settings.png" alt="ProxyDeck" width="340">
 
 </div>
 
@@ -73,20 +76,20 @@
 
 ## 📦 安装
 
-**从源码安装**（当前为未打包版本，推荐此方式）：
+从[最新发布页](https://github.com/knownrdx/ProxyDeck/releases/latest)下载 `proxydeck.zip`，或者直接克隆本仓库。
 
-1. 下载或克隆本仓库
-2. 打开 `chrome://extensions`
-3. 打开右上角的**开发者模式**
-4. 点击**加载已解压的扩展程序**，选择项目文件夹
+**Chrome、Edge、Brave、Opera、Vivaldi**
 
-**从 ZIP 安装：**
+1. 解压到一个固定的目录（浏览器会一直从该目录加载）
+2. 打开 `chrome://extensions` —— Edge 为 `edge://extensions`
+3. 打开**开发者模式**
+4. 点击**加载已解压的扩展程序**，选择解压后的文件夹
 
-```bash
-node tools/build-zip.js        # 生成 dist/proxydeck-<version>.zip
-```
+**Firefox —— 暂不支持**
 
-然后把 ZIP 拖到 `chrome://extensions` 页面上。
+Firefox 使用 `browser.proxy` 及其自有的 `proxy.onRequest` 模型实现代理，而非
+Chromium 的 `chrome.proxy` + PAC，因此当前版本无法在 Firefox 上运行。欢迎以
+Pull Request 的形式贡献 Firefox 移植版本。
 
 ---
 
@@ -102,34 +105,17 @@ Connect 标签页会立即显示新的出口 IP 及其位置。任何时候点�
 
 ---
 
-## 🧪 测试
+## 🔨 从源码构建
 
-所有功能都在真实浏览器与真实代理下验证过 —— 没有任何 mock。
-
-```bash
-# 175 条引擎断言，纯 Node，无需浏览器
-node tests/run-tests.mjs
-
-# 启动已加载扩展的 Chrome for Testing
-bash tools/restart-chrome.sh
-
-# 52 项检查：连接、认证、地理位置、计数器、断开
-CDP_PORT=9335 python tools/e2e.py
-
-# 33 项检查：粘性会话保持同一 IP、轮换、标签页隔离
-CDP_PORT=9335 python tools/e2e_tabs.py
-```
-
-端到端测试会先记录你的真实 IP，通过真实的上游代理建立连接，断言页面加载来自另一个出口 —— 然后断开并断言 IP 恢复原状。标签页隔离的验证方式是同时加载两个标签页，检查它们报告的 IP **确实不同**。
-
-也请测试打包后的产物，而不只是工作目录：
+无需构建步骤 —— 仓库可直接加载。如需生成可分发的 ZIP：
 
 ```bash
-node tools/build-zip.js
-unzip -o dist/proxydeck-*.zip -d /tmp/proxydeck-ship
-EXT_DIR=/tmp/proxydeck-ship bash tools/restart-chrome.sh
-CDP_PORT=9335 python tools/e2e.py
+node tools/build-zip.js        # -> dist/proxydeck-<version>.zip
+node tools/make-icons.mjs      # 重新生成图标集（可选）
 ```
+
+全部为原生 ES 模块，无打包工具、无 `node_modules`。`src/engine/` 层是不含任何
+`chrome.*` 调用的纯函数，因此路由、会话与解析逻辑可以脱离浏览器验证。
 
 ---
 
@@ -141,16 +127,11 @@ src/engine/proxy.js                纯逻辑 —— 解析、PAC、会话、流�
 src/background/service-worker.js   chrome.proxy、认证、地理位置、字节计数、标签页范围
 src/popup/                         popup.html · popup.css · popup.js
 icons/                             生成的 PNG 图标集
-tests/run-tests.mjs                175 条断言，零依赖
 tools/build-zip.js                 ZIP 打包脚本
 tools/make-icons.mjs               PNG 图标生成器
-tools/restart-chrome.sh            Chrome for Testing 启动脚本
-tools/e2e.py                       连接／地理位置／流量测试套件
-tools/e2e_tabs.py                  标签页范围／粘性会话测试套件
-tools/cdp.py                       极简 DevTools Protocol 客户端
 ```
 
-无需构建步骤、无打包工具、无 `node_modules`。`engine/` 层是不含任何 `chrome.*` 调用的纯函数，因此整个测试套件在纯 Node 下毫秒级完成。
+无需构建步骤、无打包工具、无 `node_modules`。
 
 ---
 
@@ -179,17 +160,21 @@ tools/cdp.py                       极简 DevTools Protocol 客户端
 
 ---
 
+## ⚖️ 免责声明
+
+ProxyDeck 是一个**网络工具**。它把你的浏览器流量转发到**你自己**提供的代理服务器 —— 它本身不提供任何代理、账号，也不保证任何匿名性。
+
+**如何使用完全由你自己负责。** 这包括遵守你所在国家的法律、你访问网站的服务条款，以及你的代理服务商的条款。请勿将本软件用于欺诈、未授权访问、规避封禁或安全控制、违反网站条款的抓取，或任何其他非法用途。
+
+作者按"原样"提供本软件，不作任何形式的担保，并且对因使用或滥用本软件而产生的任何损害、损失、账号处罚或法律后果**概不承担任何责任**。如果你不确定自己的用途是否合法，请不要使用。
+
+---
+
 ## 🤝 参与贡献
 
 本项目基于 MIT 开源 —— 随意 fork、修改、发布、商用。欢迎提交 Pull Request。
 
-提交之前请确认：
-
-```bash
-node tests/run-tests.mjs     # 必须保持全绿
-```
-
-如果你改动了路由、会话处理或计数器，请在 `tests/run-tests.mjs` 中补充断言；需要真实浏览器的场景请补充到 `tools/e2e_tabs.py`。
+提交 PR 之前，请以未打包方式加载扩展，并用真实代理验证你的改动 —— 连接后确认出口 IP 确实发生变化，并确认在标签页模式下其他标签页不受影响。
 
 ---
 

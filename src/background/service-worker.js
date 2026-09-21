@@ -105,6 +105,18 @@ function proxiedHostList() {
   return Array.from(out);
 }
 
+/** Apply a PAC built from an explicit host list (used by the geo probe). */
+async function applyPacWithHosts(profile, hosts) {
+  const config = buildConfigForScope(profile, 'tabs', hosts, { strict: !!profile.strictTabs });
+  await new Promise((resolve, reject) => {
+    chrome.proxy.settings.set({ value: config, scope: 'regular' }, () => {
+      const err = chrome.runtime.lastError;
+      if (err) reject(new Error(err.message));
+      else resolve();
+    });
+  });
+}
+
 async function applyProxy(profile, scope = profile && profile.scope) {
   const config = normalizeScope(scope) === 'tabs'
     ? buildConfigForScope(profile, 'tabs', proxiedHostList(), { strict: !!profile.strictTabs })
@@ -450,12 +462,19 @@ async function connect(profileId) {
 
   let geo = null;
   let geoError = null;
+  const tabScoped = normalizeScope(profile.scope) === 'tabs';
   try {
+    if (tabScoped) {
+      await applyPacWithHosts(profile,
+        proxiedHostList().concat(GEO_PROVIDERS.map((g) => hostOf(g.url))));
+    }
     geo = await lookupGeo();
     await chrome.storage.local.set({ geo });
   } catch (e) {
     geoError = e.message;
     await chrome.storage.local.set({ lastError: geoError });
+  } finally {
+    if (tabScoped) await applyProxy(profile, 'tabs');
   }
   return { connected: true, geo, geoError, warnings: v.warnings };
 }
@@ -477,12 +496,31 @@ async function disconnect() {
   return { connected: false, usage: finalUsage };
 }
 
-/** Geo for the current route (proxy if on, real IP if off). */
+/**
+ * Geo for the current route.
+ *
+ * In tab scope the PAC only proxies hosts that a proxied tab has loaded, and
+ * this lookup runs from the EXTENSION, not from a tab — so without help it
+ * reports the user's real IP while the badge says "proxy ip", which is both
+ * wrong and a privacy-relevant lie. Temporarily whitelist the geo provider
+ * hosts so the probe travels the same path a proxied tab would.
+ */
 async function refreshGeo() {
-  const geo = await lookupGeo();
   const st = await getState();
-  if (st.connected) await chrome.storage.local.set({ geo, lastError: null });
-  return geo;
+  const tabScoped = st.connected && activeProfile &&
+    normalizeScope(activeProfile.scope) === 'tabs';
+
+  if (tabScoped) {
+    const probeHosts = proxiedHostList().concat(GEO_PROVIDERS.map((p) => hostOf(p.url)));
+    await applyPacWithHosts(activeProfile, probeHosts);
+  }
+  try {
+    const geo = await lookupGeo();
+    if (st.connected) await chrome.storage.local.set({ geo, lastError: null });
+    return geo;
+  } finally {
+    if (tabScoped) await applyProxy(activeProfile, 'tabs');   // restore
+  }
 }
 
 /* -------------------------------------------------------------- proxy auth */
