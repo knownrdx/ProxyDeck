@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "ProxyDeck — Proxy Switcher",
+  "version": "1.1.0",
+  "description": "Modern proxy switcher with per-tab routing, sticky sessions, live IP location and data usage. HTTP/HTTPS/SOCKS4/SOCKS5 with auth.",
+  "minimum_chrome_version": "108",
+  "permissions": [
+    "proxy",
+    "storage",
+    "webRequest",
+    "webRequestAuthProvider",
+    "alarms",
+    "tabs",
+    "webNavigation",
+    "browsingData"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "ProxyDeck",
+    "default_icon": {
+      "16": "icons/off-16.png",
+      "32": "icons/off-32.png",
+      "48": "icons/off-48.png",
+      "128": "icons/off-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/off-16.png",
+    "32": "icons/off-32.png",
+    "48": "icons/off-48.png",
+    "128": "icons/off-128.png"
+  }
+}

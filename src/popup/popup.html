@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ProxyDeck</title>
+<link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" id="logoDot"></span>
+      <div>
+        <div class="brand-name">ProxyDeck</div>
+        <div class="brand-sub" id="statusLine">Disconnected</div>
+      </div>
+    </div>
+    <button class="icon-btn" id="refreshBtn" title="Refresh IP info" aria-label="Refresh">
+      <svg viewBox="0 0 24 24" width="16" height="16"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="connect" role="tab">Connect</button>
+    <button class="tab" data-tab="servers" role="tab">Servers</button>
+    <button class="tab" data-tab="add" role="tab">Add</button>
+  </nav>
+
+  <main class="body">
+
+    <!-- ========================= CONNECT ========================= -->
+    <section class="panel active" id="panel-connect">
+      <div class="power-wrap">
+        <button class="power" id="powerBtn" aria-label="Toggle connection">
+          <span class="power-ring"></span>
+          <span class="power-ring ring2"></span>
+          <svg viewBox="0 0 24 24" width="34" height="34" class="power-icon">
+            <path d="M12 3v9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M6.3 6.5a8 8 0 1 0 11.4 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="power-label" id="powerLabel">Tap to connect</div>
+      </div>
+
+      <div class="active-card" id="activeCard">
+        <div class="ac-left">
+          <div class="ac-scheme" id="acScheme">HTTP</div>
+          <div class="ac-main">
+            <div class="ac-name" id="acName">No server selected</div>
+            <div class="ac-host" id="acHost">Add one in the Add tab</div>
+          </div>
+        </div>
+        <button class="ghost-btn" id="switchBtn">Switch</button>
+      </div>
+
+      <div class="scope-row" id="scopeRow">
+        <div class="scope-seg" id="scopeSeg">
+          <button type="button" class="scope-item active" data-scope="all">
+            <span class="scope-ico">🌐</span> All tabs
+          </button>
+          <button type="button" class="scope-item" data-scope="tabs">
+            <span class="scope-ico">🗂</span> This tab only
+          </button>
+        </div>
+        <div class="tab-toggle" id="tabToggle" hidden>
+          <div class="tt-text">
+            <div class="tt-title" id="ttTitle">Current tab</div>
+            <div class="tt-sub" id="ttSub">not proxied</div>
+          </div>
+          <button class="switch" id="tabSwitch" role="switch" aria-checked="false">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="hint scope-hint" id="scopeHint">Every tab uses the proxy.</div>
+      </div>
+
+      <div class="session" id="sessionCard" hidden>
+        <div class="sess-head">
+          <span class="sess-dot" id="sessDot"></span>
+          <div class="sess-text">
+            <div class="sess-title">Sticky session <span class="sess-fmt" id="sessFmt"></span></div>
+            <div class="sess-id" id="sessId">—</div>
+          </div>
+          <button class="ghost-btn sm" id="rotateBtn" title="Get a new IP">Rotate</button>
+        </div>
+        <div class="sess-meta">
+          <span id="sessTtl">holds this IP indefinitely</span>
+          <span id="sessUser" class="sess-user"></span>
+        </div>
+      </div>
+
+      <div class="stats" id="statsCard">
+        <div class="stat">
+          <div class="stat-ico down">↓</div>
+          <div class="stat-body">
+            <div class="stat-v" id="sDown">0 B</div>
+            <div class="stat-k">Downloaded</div>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="stat-ico up">↑</div>
+          <div class="stat-body">
+            <div class="stat-v" id="sUp">0 B</div>
+            <div class="stat-k">Uploaded</div>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="stat-ico time">⏱</div>
+          <div class="stat-body">
+            <div class="stat-v" id="sTime">0:00</div>
+            <div class="stat-k">Session</div>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="stat-ico req">⇄</div>
+          <div class="stat-body">
+            <div class="stat-v" id="sReq">0</div>
+            <div class="stat-k">Requests</div>
+          </div>
+        </div>
+        <div class="stats-foot">
+          <span id="sRate">— avg</span>
+          <button class="link-btn" id="resetUsageBtn">Reset counters</button>
+        </div>
+      </div>
+
+      <div class="geo" id="geoCard">
+        <div class="geo-head">
+          <div class="geo-flag" id="geoFlag" title="Country">🌐</div>
+          <div class="geo-headtext">
+            <div class="geo-ip" id="geoIp">—</div>
+            <div class="geo-place" id="geoPlace">IP location will appear after connecting</div>
+          </div>
+          <span class="pill" id="geoPill">idle</span>
+        </div>
+        <div class="geo-grid">
+          <div class="cell"><span class="k">City</span><span class="v" id="gCity">—</span></div>
+          <div class="cell"><span class="k">Region</span><span class="v" id="gRegion">—</span></div>
+          <div class="cell"><span class="k">Country</span><span class="v" id="gCountry">—</span></div>
+          <div class="cell"><span class="k">Postal</span><span class="v" id="gPostal">—</span></div>
+          <div class="cell wide"><span class="k">ISP / Org</span><span class="v" id="gIsp">—</span></div>
+          <div class="cell"><span class="k">ASN</span><span class="v" id="gAsn">—</span></div>
+          <div class="cell"><span class="k">Timezone</span><span class="v" id="gTz">—</span></div>
+          <div class="cell"><span class="k">Coords</span><span class="v" id="gCoord">—</span></div>
+          <div class="cell"><span class="k">Latency</span><span class="v" id="gLat">—</span></div>
+        </div>
+        <div class="geo-foot">
+          <span id="geoSource">—</span>
+          <button class="link-btn" id="copyBtn">Copy details</button>
+        </div>
+      </div>
+
+      <div class="alert" id="alertBox" hidden></div>
+    </section>
+
+    <!-- ========================= SERVERS ========================= -->
+    <section class="panel" id="panel-servers">
+      <div class="list" id="serverList"></div>
+      <div class="empty" id="serverEmpty" hidden>
+        <div class="empty-emoji">🛰️</div>
+        <div class="empty-title">No servers yet</div>
+        <div class="empty-sub">Head to the Add tab to create your first proxy.</div>
+      </div>
+      <div class="row-actions">
+        <button class="ghost-btn wide" id="exportBtn">Export JSON</button>
+      </div>
+    </section>
+
+    <!-- =========================== ADD =========================== -->
+    <section class="panel" id="panel-add">
+      <div class="quick">
+        <label class="lbl">Quick paste</label>
+        <div class="quick-row">
+          <input class="inp" id="quickInput" placeholder="host:port:user:pass  or  socks5://user:pass@host:port" />
+          <button class="solid-btn sm" id="quickBtn">Parse</button>
+        </div>
+        <div class="hint">Paste any common proxy format — it fills the form below.</div>
+      </div>
+
+      <form id="addForm" autocomplete="off">
+        <input type="hidden" id="fId" />
+        <label class="lbl">Label</label>
+        <input class="inp" id="fName" placeholder="e.g. US Residential" maxlength="40" />
+
+        <label class="lbl">Protocol</label>
+        <div class="seg" id="schemeSeg">
+          <button type="button" class="seg-item active" data-scheme="http">HTTP</button>
+          <button type="button" class="seg-item" data-scheme="https">HTTPS</button>
+          <button type="button" class="seg-item" data-scheme="socks4">SOCKS4</button>
+          <button type="button" class="seg-item" data-scheme="socks5">SOCKS5</button>
+        </div>
+
+        <div class="two">
+          <div class="col grow">
+            <label class="lbl">Server</label>
+            <input class="inp" id="fHost" placeholder="proxy.example.com" required />
+          </div>
+          <div class="col port">
+            <label class="lbl">Port</label>
+            <input class="inp" id="fPort" placeholder="8080" inputmode="numeric" required />
+          </div>
+        </div>
+
+        <div class="two">
+          <div class="col grow">
+            <label class="lbl">Username <span class="opt">optional</span></label>
+            <input class="inp" id="fUser" placeholder="username" />
+          </div>
+          <div class="col grow">
+            <label class="lbl">Password <span class="opt">optional</span></label>
+            <div class="pw">
+              <input class="inp" id="fPass" type="password" placeholder="password" />
+              <button type="button" class="eye" id="eyeBtn" aria-label="Show password">👁</button>
+            </div>
+          </div>
+        </div>
+
+        <label class="lbl">Proxy scope</label>
+        <div class="seg two-seg" id="fScopeSeg">
+          <button type="button" class="seg-item active" data-scope="all">All tabs</button>
+          <button type="button" class="seg-item" data-scope="tabs">Selected tabs only</button>
+        </div>
+        <div class="hint">"Selected tabs only" keeps every other tab on your real IP.</div>
+
+        <label class="lbl">Sticky session <span class="opt">hold one IP</span></label>
+        <select class="inp" id="fSessionFormat">
+          <option value="none">Off — new IP per request</option>
+          <option value="dataimpulse">DataImpulse (__cr.cc __sid.xxx)</option>
+          <option value="brightdata">Bright Data (-country-cc -session-xxx)</option>
+          <option value="oxylabs">Oxylabs (-cc-xx -sessid-xxx)</option>
+          <option value="smartproxy">Smartproxy / Decodo (-country-cc -session-xxx)</option>
+          <option value="iproyal">IPRoyal (_country-cc _session-xxx)</option>
+          <option value="custom">Custom suffix…</option>
+        </select>
+
+        <div id="sessionOpts" hidden>
+          <div class="two">
+            <div class="col grow">
+              <label class="lbl">Country <span class="opt">2-letter</span></label>
+              <input class="inp" id="fSessionCountry" placeholder="us" maxlength="2" />
+            </div>
+            <div class="col grow">
+              <label class="lbl">Hold for <span class="opt">minutes</span></label>
+              <input class="inp" id="fSessionTtl" placeholder="0 = forever" inputmode="numeric" />
+            </div>
+          </div>
+          <div class="two">
+            <div class="col grow">
+              <label class="lbl">Port range <span class="opt">optional</span></label>
+              <input class="inp" id="fPortRangeStart" placeholder="10000" inputmode="numeric" />
+            </div>
+            <div class="col grow">
+              <label class="lbl">to</label>
+              <input class="inp" id="fPortRangeEnd" placeholder="10500" inputmode="numeric" />
+            </div>
+          </div>
+          <div class="hint">Some gateways give each port its own session slot. Setting a range makes Rotate hop ports, which also clears Chrome's cached proxy login.</div>
+
+          <div id="customTplWrap" hidden>
+            <label class="lbl">Custom suffix template</label>
+            <input class="inp" id="fSessionTemplate" placeholder="-zone-{cc}-sess-{sid}" />
+            <div class="hint">{cc} = country, {sid} = generated session id.</div>
+          </div>
+          <div class="preview" id="userPreview"></div>
+        </div>
+
+        <details class="adv">
+          <summary>Advanced</summary>
+          <label class="lbl">Bypass list</label>
+          <input class="inp" id="fBypass" placeholder="localhost, 127.0.0.1, <local>" />
+          <div class="hint">Comma separated hosts that skip the proxy.</div>
+          <label class="check">
+            <input type="checkbox" id="fStrictTabs" />
+            <span>Strict tab mode — proxy unknown hosts too (safer against leaks, but other tabs may hit the proxy)</span>
+          </label>
+        </details>
+
+        <div class="form-actions">
+          <button type="button" class="ghost-btn" id="resetBtn">Clear</button>
+          <button type="submit" class="solid-btn" id="saveBtn">Save &amp; Connect</button>
+        </div>
+        <div class="alert" id="formAlert" hidden></div>
+      </form>
+    </section>
+
+  </main>
+</div>
+<script type="module" src="popup.js"></script>
+</body>
+</html>
